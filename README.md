@@ -10,3 +10,12 @@ Current repo status:
 - secrets go in `.env`, using `.env.example` as the template
 
 The MLS SQL dumps and `.env` file are intentionally not committed.
+
+Week 2 parser work lives in `src/skills/property-search`.
+
+Run checks:
+
+```bash
+npm test
+npm run typecheck
+```
