@@ -22,7 +22,7 @@ npm run typecheck
 
 Week 3 database integration adds MySQL query helpers in `src/db`.
 
-The local Docker database currently has `rets.rets_property`; `california_sold` can be imported later for sold comps.
+The local Docker database has `rets.rets_property` and `rets.california_sold` for active listings and sold comps.
 
 Database checks:
 
