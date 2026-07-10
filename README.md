@@ -19,3 +19,18 @@ Run checks:
 npm test
 npm run typecheck
 ```
+
+Week 3 database integration adds MySQL query helpers in `src/db`.
+
+The local Docker database currently has `rets.rets_property`; `california_sold` can be imported later for sold comps.
+
+Database checks:
+
+```bash
+npm test
+npm run typecheck
+RUN_DB_TESTS=1 npm test
+```
+
+`RUN_DB_TESTS=1` expects the Docker MySQL container to be reachable on `localhost:3306` with the `.env` settings.
+
