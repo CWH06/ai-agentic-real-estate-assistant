@@ -6,11 +6,17 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo:market": "tsx scripts/demoMarketStats.ts",
+    "demo:whatsapp": "tsx scripts/demoWhatsApp.ts",
+    "bridge:whatsapp": "tsx scripts/bridgeWhatsApp.ts",
+    "demo:whatsapp:send": "tsx scripts/sendWhatsAppDemo.ts",
+    "demo:agent": "vitest run tests/conversationLongDemo.test.ts --reporter verbose"
   }
 }

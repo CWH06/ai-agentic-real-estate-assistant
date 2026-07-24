@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { closePool } from "../src/db/mysql";
+import { getMarketStatsReport } from "../src/db/marketStats";
 import { getSoldComps } from "../src/db/soldComps";
 import { propertySearchSkill } from "../src/skills/property-search";
 
@@ -33,5 +34,19 @@ describe.skipIf(!runDbTests)("database integration", () => {
     expect(comps[0]).toHaveProperty("ClosePrice");
     expect(comps[0]).toHaveProperty("PropertySubType");
 
+  });
+
+  it("builds a market statistics report from california_sold", async () => {
+    const report = await getMarketStatsReport("Irvine", 60);
+
+    expect(report.summary).toMatchObject({
+      city: "Irvine",
+      months: 60,
+    });
+    expect(report.summary.soldCount).toBeGreaterThan(0);
+    expect(report.summary.medianClosePrice).toBeGreaterThan(0);
+    expect(report.summary.averageDaysOnMarket).not.toBeNull();
+    expect(report.summary.listToClosePercent).not.toBeNull();
+    expect(report.monthlyTrend.length).toBeGreaterThan(0);
   });
 });

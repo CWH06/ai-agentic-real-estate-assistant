@@ -4,6 +4,8 @@ node_modules/
 .env.local
 .DS_Store
 *.sql
+data/*.csv
+data/*.geojson
 .openclaw-workspace/
 openclaw-session*/
 whatsapp-session*/

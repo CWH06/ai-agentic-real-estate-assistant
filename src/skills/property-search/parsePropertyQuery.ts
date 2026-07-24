@@ -68,9 +68,19 @@ function parseCity(text: string): string | null {
 }
 
 function parsePrice(text: string): number | null {
-  const match = text.match(/\b(?:under|below|less than|max(?:imum)?(?: price)?|up to)\s+\$?([\d,.]+)\s*([kKmM])?\b/i);
-  if (!match) return null;
-  return parseCompactNumber(match[1], match[2]);
+  const pricePattern = /\b(?:under|below|less than|max(?:imum)?(?: price)?|up to)\s+\$?([\d,.]+)\s*([kKmM])?\b/gi;
+
+  for (const match of text.matchAll(pricePattern)) {
+    const before = text.slice(0, match.index).trim().toLowerCase();
+    const after = text.slice((match.index ?? 0) + match[0].length).trim().toLowerCase();
+
+    if (/\b(?:hoa|association fee)$/.test(before)) continue;
+    if (!match[2] && /^(?:hoa|association fee)\b/.test(after)) continue;
+
+    return parseCompactNumber(match[1], match[2]);
+  }
+
+  return null;
 }
 
 function parseBeds(text: string): number | null {
