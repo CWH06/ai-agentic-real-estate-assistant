@@ -1,10 +1,11 @@
 import { searchActiveListings } from "../../db/listingSearch";
-import { formatPropertyCards } from "./formatListings";
+import { formatListingIdentifier, formatPropertyCards } from "./formatListings";
 import type { PropertyCard } from "./formatListings";
 import { getFollowUpQuestion } from "./followUp";
 import { mergeFilters } from "./mergeFilters";
 import { parsePropertyQuery } from "./parsePropertyQuery";
 import { clearSession, getSession, updateSession } from "./session";
+import type { PropertyFilters } from "../../types/propertyFilters";
 
 export interface PropertySearchResponse {
   message: string;
@@ -27,6 +28,7 @@ export async function handlePropertySearch(
 
   const session = getSession(sessionId);
   const newFilters = parsePropertyQuery(userInput);
+  applyContextualFollowUpFilters(session.filters, newFilters, userInput);
   const mergedFilters = mergeFilters(session.filters, newFilters);
 
   updateSession(sessionId, {
@@ -57,10 +59,72 @@ export async function handlePropertySearch(
   };
 }
 
+function applyContextualFollowUpFilters(
+  currentFilters: PropertyFilters,
+  newFilters: PropertyFilters,
+  userInput: string,
+): void {
+  if (!newFilters.maxPrice) {
+    const budget = parseBudgetReply(
+      userInput,
+      !currentFilters.maxPrice,
+    );
+    if (budget) {
+      newFilters.maxPrice = budget;
+    }
+  }
+
+  if (
+    currentFilters.maxPrice
+    && currentFilters.type
+    && !currentFilters.beds
+    && !newFilters.beds
+  ) {
+    const beds = parseBedroomsReply(userInput);
+    if (beds) {
+      newFilters.beds = beds;
+    }
+  }
+}
+
+function parseBudgetReply(
+  text: string,
+  allowPlainNumber: boolean,
+): number | null {
+  const normalized = text.trim();
+  const match = normalized.match(/^\$?\s*([\d,.]+)\s*([kKmM])?$/);
+  if (!match) return null;
+
+  const hasPriceSignal =
+    normalized.includes("$")
+    || normalized.includes(",")
+    || Boolean(match[2]);
+  if (!allowPlainNumber && !hasPriceSignal) return null;
+
+  let amount = Number(match[1].replace(/,/g, ""));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const suffix = match[2]?.toLowerCase();
+  if (suffix === "k") amount *= 1_000;
+  if (suffix === "m") amount *= 1_000_000;
+
+  return Math.round(amount);
+}
+
+function parseBedroomsReply(text: string): number | null {
+  const match = text.trim().match(/^(\d+)$/);
+  if (!match) return null;
+
+  const beds = Number(match[1]);
+  if (!Number.isInteger(beds) || beds < 1 || beds > 20) return null;
+  return beds;
+}
+
 function formatConversationResults(listings: PropertyCard[]): string {
   const lines = listings.map((listing, index) => {
     return [
       `${index + 1}. ${listing.address}, ${listing.city ?? ""}`,
+      formatListingIdentifier(listing),
       listing.summary,
       `Photos: ${listing.facts.photoCount ?? 0}`,
     ].join("\n");

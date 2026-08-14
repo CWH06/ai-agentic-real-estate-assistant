@@ -1,4 +1,4 @@
-import { handlePropertySearch } from "../skills/property-search/conversation";
+import { handleChatMessage } from "../chat/router";
 
 export interface WhatsAppInboundMessage {
   userId: string;
@@ -13,10 +13,10 @@ export interface WhatsAppOutboundMessage {
 export async function onWhatsAppMessage(
   inbound: WhatsAppInboundMessage,
 ): Promise<WhatsAppOutboundMessage> {
-  const result = await handlePropertySearch(inbound.userId, inbound.text);
+  const result = await handleChatMessage(inbound);
 
   return {
     userId: inbound.userId,
-    text: result.message,
+    text: result.text,
   };
 }

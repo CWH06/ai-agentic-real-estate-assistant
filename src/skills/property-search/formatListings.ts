@@ -68,6 +68,18 @@ export function formatPropertyCards(rows: ListingRow[]): PropertyCard[] {
   });
 }
 
+export function formatListingIdentifier(listing: PropertyCard): string {
+  if (listing.listingId) {
+    return `Listing ID: ${listing.listingId}`;
+  }
+
+  if (listing.displayId) {
+    return `Listing ID: ${listing.displayId}`;
+  }
+
+  return "Listing ID: unavailable";
+}
+
 function formatSummary(row: ListingRow): string {
   const price = row.price ? `$${row.price.toLocaleString()}` : "Price unavailable";
   const beds = row.beds ?? "?";
