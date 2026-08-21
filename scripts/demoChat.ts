@@ -35,6 +35,8 @@ async function main(): Promise<void> {
         console.log("Agent [semantic-search]: Searching embeddings...");
       } else if (intent === "recommendations") {
         console.log("Agent [recommendations]: Building recommendations...");
+      } else if (intent === "knowledge") {
+        console.log("Agent [knowledge]: Retrieving grounded context...");
       }
 
       const reply = await handleChatMessage({

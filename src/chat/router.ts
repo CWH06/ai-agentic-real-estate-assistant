@@ -1,11 +1,13 @@
 import { marketStatsSkill } from "../skills/market-stats";
 import { handlePropertySearch } from "../skills/property-search/conversation";
 import { recommendationSkill } from "../skills/recommendations";
+import { ragSkill } from "../skills/rag";
 import { semanticSearchSkill } from "../skills/semantic-search";
 
 export type ChatIntent =
   | "help"
   | "market-stats"
+  | "knowledge"
   | "recommendations"
   | "semantic-search"
   | "property-search";
@@ -25,6 +27,9 @@ const HELP_TEXT = [
   "Try one of these:",
   "- Find homes in Irvine under 2M",
   "- Market stats for Irvine over 12 months",
+  "- What does DOM mean?",
+  "- What columns are in california_sold?",
+  "- What is a list-to-close ratio?",
   "- Semantic search: charming craftsman with mountain views",
   "- Recommend similar to 1118398412",
 ].join("\n");
@@ -47,6 +52,16 @@ function stripSemanticPrefix(text: string): string {
     .trim();
 }
 
+function isKnowledgeQuestion(text: string): boolean {
+  const hasKnowledgeTerm = /\b(?:dom|days on market|list[- ]to[- ]close|escrow|cap rate|capitalization rate|comps?|comparable sales?|hoa|association fee|median price|price per square foot|inventory|california_sold|rets_property|mls (?:field|column|schema)|school district mapping|disclosure|agency relationship)\b/i
+    .test(text);
+  const asksForExplanation = /\b(?:what (?:does|is|are)|define|definition|explain|meaning|which (?:columns|fields)|columns? (?:are|does)|fields? (?:are|does)|schema)\b/i
+    .test(text)
+    || /(?:是什么意思|什么是|解释|有哪些(?:列|字段)|包含哪些(?:列|字段)|表结构)/.test(text);
+
+  return hasKnowledgeTerm && asksForExplanation;
+}
+
 export function detectChatIntent(text: string): ChatIntent {
   const normalized = normalize(text);
   const lower = normalized.toLowerCase();
@@ -57,6 +72,11 @@ export function detectChatIntent(text: string): ChatIntent {
 
   if (extractRecommendationListingId(normalized)) {
     return "recommendations";
+  }
+
+  // Knowledge questions must be checked before market keywords such as DOM.
+  if (isKnowledgeQuestion(normalized)) {
+    return "knowledge";
   }
 
   if (
@@ -93,6 +113,15 @@ export async function handleChatMessage(
 
   if (intent === "market-stats") {
     const result = await marketStatsSkill(text);
+    return {
+      userId: message.userId,
+      text: result.message,
+      intent,
+    };
+  }
+
+  if (intent === "knowledge") {
+    const result = await ragSkill(text);
     return {
       userId: message.userId,
       text: result.message,

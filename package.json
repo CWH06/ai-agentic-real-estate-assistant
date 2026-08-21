@@ -17,6 +17,8 @@
     "embeddings:index": "tsx scripts/indexListingEmbeddings.ts",
     "demo:semantic": "tsx scripts/demoSemanticSearch.ts",
     "demo:recommendations": "tsx scripts/demoRecommendations.ts",
+    "rag:index": "tsx scripts/indexKnowledge.ts",
+    "demo:rag": "tsx scripts/demoRag.ts",
     "demo:chat": "tsx scripts/demoChat.ts",
     "demo:whatsapp": "tsx scripts/demoWhatsApp.ts",
     "bridge:whatsapp": "tsx scripts/bridgeWhatsApp.ts",
