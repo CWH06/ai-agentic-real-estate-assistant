@@ -1,80 +1,53 @@
-# AI Real Estate Assistant
+# AI Agentic Real Estate Assistant
 
-OpenClaw-based real estate assistant for MLS property search, market analytics,
-semantic search, recommendations, and RAG knowledge Q&A.
+AI Agentic Real Estate Assistant is an OpenClaw-based multi-agent assistant for
+real estate search, market analysis, recommendations, and knowledge retrieval.
+The project is built around real MLS-style datasets and is designed to show how
+an agentic system can combine structured database queries, conversational memory,
+vector search, recommendation logic, and retrieval-augmented generation in one
+assistant experience.
 
-## Current Status
+The assistant can help users search active listings with natural language,
+answer follow-up questions across a multi-turn conversation, summarize local
+market trends from sold transaction data, find semantically similar properties,
+recommend comparable active listings, and answer project or real-estate glossary
+questions from an indexed knowledge base.
 
-- Property search with multi-turn follow-up questions.
-- Market statistics from `california_sold`.
-- Semantic listing search over active `rets_property` listings.
-- Similar-listing recommendations with comp price checks.
-- Week 8 RAG knowledge assistant over Markdown files in `knowledge/`.
+## Core Capabilities
 
-## Setup
+- Natural language property search over active listings.
+- Multi-turn conversation memory for missing search filters.
+- Market statistics and trend summaries from sold comps.
+- Semantic property search using listing description embeddings.
+- Similar-listing recommendations with comp-based price checks.
+- RAG knowledge assistant over MLS field definitions and real-estate notes.
+- Shared chat routing for local CLI demos and WhatsApp-style message handling.
 
-1. Copy `.env.example` to `.env` and fill in local secrets.
-2. Start the local MySQL container:
+## Data Sources
 
-```bash
-docker start rets-mysql
-```
+The project uses two local MySQL tables:
 
-3. Install dependencies if needed:
+- `rets_property` for active MLS listings, listing remarks, property facts,
+  agent information, prices, locations, and photos.
+- `california_sold` for sold transactions, comps, close prices, market timing,
+  and historical pricing analysis.
 
-```bash
-npm install
-```
+Large SQL dumps, local database files, API keys, and `.env` secrets are not
+committed to the repository.
 
-Secrets, SQL dumps, and `.env` are not committed.
+## Tech Stack
 
-## Indexing
+- TypeScript and Node.js
+- OpenClaw runtime
+- MySQL with `mysql2`
+- Vitest for tests
+- Embeddings through Voyage or OpenAI
+- RAG answer generation through DeepSeek or OpenAI
 
-Semantic listing search needs listing embeddings:
+## Project Status
 
-```bash
-npm run embeddings:index
-```
-
-Week 8 RAG needs knowledge chunks indexed:
-
-```bash
-npm run rag:index
-```
-
-Both commands send local text to the configured embedding provider, such as
-Voyage or OpenAI.
-
-## Demos
-
-```bash
-npm run demo:chat
-npm run demo:market -- "market stats for Irvine over 12 months"
-npm run demo:semantic -- "charming craftsman with mountain views"
-npm run demo:recommendations -- 1118398412
-npm run demo:rag -- "What does DOM mean?"
-```
-
-Useful Week 8 RAG questions:
-
-- `What does DOM mean?`
-- `What columns are in california_sold?`
-- `What is a list-to-close ratio?`
-
-## Checks
-
-```bash
-npm run typecheck
-npm test
-```
-
-Database integration tests require MySQL on `localhost:3306`:
-
-```bash
-RUN_DB_TESTS=1 npm test
-```
-
-## Next
-
-Week 9 will add a single orchestrator that routes mixed user requests across
-the specialized agents.
+The project currently includes property search, database integration,
+conversational follow-up handling, market statistics, semantic search,
+recommendations, and Week 8 RAG knowledge retrieval. The next major step is a
+single orchestrator that coordinates all specialized agents for mixed user
+requests.
