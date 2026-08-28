@@ -51,7 +51,7 @@ function parseCity(text: string): string | null {
    * - market statistics for San Diego
    */
   const locationPattern =
-    /\b(?:in|around|for)\s+([a-z][a-z\s.'-]*?)(?=$|[?.,]|\s+(?:over|during|within|from|for|last|past|previous)\b)/gi;
+    /\b(?:in|around|for)\s+([a-z][a-z\s.'-]*?)(?=$|[?.,]|\s+(?:under|below|less than|max|maximum|up to|with|at least|minimum|over|during|within|from|for|last|past|previous|whether)\b|\s+and\s+(?:are|is|if|whether|tell|show|give)\b)/gi;
 
   for (const match of text.matchAll(locationPattern)) {
     const candidate = cleanCity(match[1]);

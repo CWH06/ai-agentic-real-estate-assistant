@@ -24,6 +24,28 @@ describe("parseMarketQuery", () => {
     });
   });
 
+  it("stops the city before a mixed-intent connector", () => {
+    expect(
+      parseMarketQuery(
+        "Find affordable homes in Pasadena and tell me whether prices are rising.",
+      ),
+    ).toEqual({
+      city: "Pasadena",
+      months: 12,
+    });
+  });
+
+  it("stops the city before property filters in a mixed-intent query", () => {
+    expect(
+      parseMarketQuery(
+        "Find homes in Pasadena under 1M and tell me whether prices are rising.",
+      ),
+    ).toEqual({
+      city: "Pasadena",
+      months: 12,
+    });
+  });
+
   it("parses a possessive housing market question", () => {
     expect(
       parseMarketQuery(

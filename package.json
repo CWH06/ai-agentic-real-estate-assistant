@@ -19,6 +19,7 @@
     "demo:recommendations": "tsx scripts/demoRecommendations.ts",
     "rag:index": "tsx scripts/indexKnowledge.ts",
     "demo:rag": "tsx scripts/demoRag.ts",
+    "demo:orchestrator": "tsx scripts/demoOrchestrator.ts",
     "demo:chat": "tsx scripts/demoChat.ts",
     "demo:whatsapp": "tsx scripts/demoWhatsApp.ts",
     "bridge:whatsapp": "tsx scripts/bridgeWhatsApp.ts",

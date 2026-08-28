@@ -1,4 +1,4 @@
-import { handleChatMessage } from "../chat/router";
+import { orchestrate } from "../orchestrator";
 
 export interface WhatsAppInboundMessage {
   userId: string;
@@ -13,10 +13,10 @@ export interface WhatsAppOutboundMessage {
 export async function onWhatsAppMessage(
   inbound: WhatsAppInboundMessage,
 ): Promise<WhatsAppOutboundMessage> {
-  const result = await handleChatMessage(inbound);
+  const result = await orchestrate(inbound.text, inbound.userId);
 
   return {
     userId: inbound.userId,
-    text: result.text,
+    text: result.message,
   };
 }

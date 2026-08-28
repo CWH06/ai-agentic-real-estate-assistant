@@ -8,7 +8,7 @@ vi.mock("../src/db/listingSearch", () => ({
 }));
 
 import { handlePropertySearch } from "../src/skills/property-search/conversation";
-import { clearSession, getSession } from "../src/skills/property-search/session";
+import { clearSession, getSession, updateSession } from "../src/skills/property-search/session";
 
 function listing(): ListingRow {
   return {
@@ -110,6 +110,42 @@ describe("property conversation contextual follow-ups", () => {
     expect(getSession(userId).filters).toMatchObject({
       maxPrice: 4_000_000,
       beds: null,
+    });
+  });
+
+  it("starts a fresh search when a completed session receives a new city search", async () => {
+    const userId = "fresh-search-demo";
+    clearSession(userId);
+    updateSession(userId, {
+      conversationStep: 4,
+      filters: {
+        city: "Pasadena",
+        maxPrice: 1_000_000,
+        beds: 4,
+        baths: null,
+        sqft: null,
+        type: "SingleFamilyResidence",
+        pool: null,
+        hasView: null,
+        maxHoa: null,
+      },
+    });
+
+    await expect(
+      handlePropertySearch(
+        userId,
+        "Find me affordable homes in Pasadena and tell me whether prices are rising.",
+      ),
+    ).resolves.toEqual({
+      message: "What is your budget?",
+      done: false,
+    });
+
+    expect(getSession(userId).filters).toMatchObject({
+      city: "Pasadena",
+      maxPrice: null,
+      beds: null,
+      type: "SingleFamilyResidence",
     });
   });
 });

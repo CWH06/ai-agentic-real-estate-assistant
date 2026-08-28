@@ -56,8 +56,7 @@ function isKnowledgeQuestion(text: string): boolean {
   const hasKnowledgeTerm = /\b(?:dom|days on market|list[- ]to[- ]close|escrow|cap rate|capitalization rate|comps?|comparable sales?|hoa|association fee|median price|price per square foot|inventory|california_sold|rets_property|mls (?:field|column|schema)|school district mapping|disclosure|agency relationship)\b/i
     .test(text);
   const asksForExplanation = /\b(?:what (?:does|is|are)|define|definition|explain|meaning|which (?:columns|fields)|columns? (?:are|does)|fields? (?:are|does)|schema)\b/i
-    .test(text)
-    || /(?:是什么意思|什么是|解释|有哪些(?:列|字段)|包含哪些(?:列|字段)|表结构)/.test(text);
+    .test(text);
 
   return hasKnowledgeTerm && asksForExplanation;
 }

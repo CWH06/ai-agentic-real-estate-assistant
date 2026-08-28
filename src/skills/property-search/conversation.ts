@@ -16,9 +16,9 @@ export async function handlePropertySearch(
   sessionId: string,
   userInput: string,
 ): Promise<PropertySearchResponse> {
-  const normalized = userInput.trim().toLowerCase();
+  const normalized = userInput.trim();
 
-  if (normalized === "reset" || normalized === "start over") {
+  if (isResetRequest(normalized)) {
     clearSession(sessionId);
     return {
       message: "Okay, I cleared your search. What city are you looking in?",
@@ -26,8 +26,14 @@ export async function handlePropertySearch(
     };
   }
 
-  const session = getSession(sessionId);
   const newFilters = parsePropertyQuery(userInput);
+  let session = getSession(sessionId);
+
+  if (shouldStartFreshSearch(session.filters, session.conversationStep, newFilters, userInput)) {
+    clearSession(sessionId);
+    session = getSession(sessionId);
+  }
+
   applyContextualFollowUpFilters(session.filters, newFilters, userInput);
   const mergedFilters = mergeFilters(session.filters, newFilters);
 
@@ -131,4 +137,22 @@ function formatConversationResults(listings: PropertyCard[]): string {
   });
 
   return `I found ${listings.length} matching listings:\n\n${lines.join("\n\n")}`;
+}
+
+function isResetRequest(text: string): boolean {
+  return /^(?:reset|start over|restart|clear search|new search)$/i.test(text.trim());
+}
+
+function shouldStartFreshSearch(
+  currentFilters: PropertyFilters,
+  conversationStep: number,
+  newFilters: PropertyFilters,
+  userInput: string,
+): boolean {
+  if (conversationStep === 0) return false;
+  if (getFollowUpQuestion(currentFilters)) return false;
+  if (!newFilters.city) return false;
+
+  return /\b(?:find|show|search|homes|houses|condos|townhomes|properties|listings|affordable)\b/i
+    .test(userInput);
 }

@@ -53,8 +53,6 @@ describe("detectChatIntent", () => {
     expect(detectChatIntent("What does DOM mean?")).toBe("knowledge");
     expect(detectChatIntent("What columns are in california_sold?")).toBe("knowledge");
     expect(detectChatIntent("What is a list-to-close ratio?")).toBe("knowledge");
-    expect(detectChatIntent("DOM 是什么意思？")).toBe("knowledge");
-    expect(detectChatIntent("california_sold 有哪些字段？")).toBe("knowledge");
   });
 
   it("detects recommendations", () => {
