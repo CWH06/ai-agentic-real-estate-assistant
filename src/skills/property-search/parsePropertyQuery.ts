@@ -16,7 +16,7 @@ const TYPE_PATTERNS: Array<[RegExp, PropertyType]> = [
   [/\b(manufactured home|mobile home|mobile homes)\b/i, "ManufacturedHome"],
   [/\b(condo|condos|condominium|condominiums)\b/i, "Condominium"],
   [/\b(townhome|townhomes|townhouse|town house|townhouses)\b/i, "Townhouse"],
-  [/\b(single family|single-family|sfh|house|home|homes)\b/i, "SingleFamilyResidence"],
+  [/\b(single family|single-family|sfh|house|houses|home|homes)\b/i, "SingleFamilyResidence"],
   [/\b(land|lot)\b/i, "UnimprovedLand"],
   [/\bduplex\b/i, "Duplex"],
   [/\btriplex\b/i, "Triplex"],

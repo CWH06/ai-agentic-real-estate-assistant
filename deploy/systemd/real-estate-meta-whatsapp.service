@@ -1,0 +1,23 @@
+[Unit]
+Description=Real Estate Assistant Meta WhatsApp Webhook
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=simple
+User=cwh
+Group=cwh
+WorkingDirectory=/home/cwh/ai-agentic-real-estate-assistant
+Environment=NODE_ENV=production
+Environment=PATH=/home/cwh/.nvm/versions/node/v24.20.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+EnvironmentFile=/home/cwh/ai-agentic-real-estate-assistant/.env
+ExecStart=/home/cwh/.nvm/versions/node/v24.20.0/bin/npm run whatsapp:meta:webhook
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,16 +1,27 @@
 {
+  "name": "ai-agentic-real-estate-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=24" },
   "dependencies": {
     "dotenv": "^17.4.2",
     "mysql2": "^3.22.6",
+    "nodemailer": "^10.0.0",
     "openclaw": "^2026.6.10"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "@types/nodemailer": "^8.0.1",
     "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
   "scripts": {
+    "demo": "tsx scripts/demoAssistant.ts",
+    "demo:script": "tsx scripts/demoAssistant.ts --scripted",
+    "demo:live": "tsx scripts/demoAssistant.ts --live",
+    "demo:check": "tsx scripts/checkDemo.ts",
+    "check": "npm run typecheck && npm test",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "demo:market": "tsx scripts/demoMarketStats.ts",
@@ -20,10 +31,20 @@
     "rag:index": "tsx scripts/indexKnowledge.ts",
     "demo:rag": "tsx scripts/demoRag.ts",
     "demo:orchestrator": "tsx scripts/demoOrchestrator.ts",
-    "demo:chat": "tsx scripts/demoChat.ts",
+    "demo:email": "tsx scripts/demoEmailAgent.ts",
+    "demo:chat": "tsx scripts/demoAssistant.ts --live",
     "demo:whatsapp": "tsx scripts/demoWhatsApp.ts",
     "bridge:whatsapp": "tsx scripts/bridgeWhatsApp.ts",
     "demo:whatsapp:send": "tsx scripts/sendWhatsAppDemo.ts",
-    "demo:agent": "vitest run tests/conversationLongDemo.test.ts --reporter verbose"
+    "demo:agent": "vitest run tests/conversationLongDemo.test.ts --reporter verbose",
+    "whatsapp:webhook": "tsx scripts/startWhatsAppWebhook.ts",
+    "whatsapp:meta:webhook": "tsx scripts/startMetaWhatsAppWebhook.ts"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "openclaw@2026.6.10": true,
+    "protobufjs@7.6.3": true,
+    "tree-sitter-bash@0.25.1": true,
+    "@google/genai@2.7.0": true
   }
 }

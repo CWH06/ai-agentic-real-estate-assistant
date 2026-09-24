@@ -17,6 +17,10 @@ interface RawClosePriceRow {
   ClosePrice: number | string;
 }
 
+interface RawMedianClosePriceRow {
+  medianClosePrice: number | string | null;
+}
+
 interface RawMonthlyTrendRow {
   month: string;
   soldCount: number | string;
@@ -138,6 +142,39 @@ export function buildClosePricesQuery(
       AND STR_TO_DATE(CloseDate, "%Y-%m-%d")
         >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
     ORDER BY ClosePrice ASC
+    LIMIT 50
+  `.trim();
+
+  return {
+    sql,
+    params: [city.trim(), safeMonths],
+  };
+}
+
+export function buildMedianClosePriceQuery(
+  city: string,
+  months = 12,
+): MarketQuery {
+  const safeMonths = normalizeMonths(months);
+
+  const sql = `
+    SELECT AVG(ranked.ClosePrice) AS medianClosePrice
+    FROM (
+      SELECT
+        ClosePrice,
+        ROW_NUMBER() OVER (ORDER BY ClosePrice) AS rowNumber,
+        COUNT(*) OVER () AS rowCount
+      FROM california_sold
+      WHERE LOWER(TRIM(City)) = LOWER(TRIM(?))
+        AND PropertyType = "Residential"
+        AND ClosePrice > 0
+        AND STR_TO_DATE(CloseDate, "%Y-%m-%d")
+          >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+    ) AS ranked
+    WHERE ranked.rowNumber IN (
+      FLOOR((ranked.rowCount + 1) / 2),
+      FLOOR((ranked.rowCount + 2) / 2)
+    )
   `.trim();
 
   return {
@@ -149,6 +186,7 @@ export function buildClosePricesQuery(
 export function buildMonthlyTrendQuery(
   city: string,
   months = 12,
+  offset = 0,
 ): MarketQuery {
   const safeMonths = normalizeMonths(months);
 
@@ -185,11 +223,13 @@ export function buildMonthlyTrendQuery(
       "%Y-%m"
     )
     ORDER BY month ASC
+    LIMIT 50
+    OFFSET ?
   `.trim();
 
   return {
     sql,
-    params: [city.trim(), safeMonths],
+    params: [city.trim(), safeMonths, Math.max(0, Math.floor(offset))],
   };
 }
 
@@ -208,27 +248,23 @@ export async function getCityMarketSummary(
     normalizedCity,
     safeMonths,
   );
-  const pricesQuery = buildClosePricesQuery(
+  const medianQuery = buildMedianClosePriceQuery(
     normalizedCity,
     safeMonths,
   );
 
-  const [summaryRows, priceRows] = await Promise.all([
+  const [summaryRows, medianRows] = await Promise.all([
     query<RawMarketSummaryRow>(
       summaryQuery.sql,
       summaryQuery.params,
     ),
-    query<RawClosePriceRow>(
-      pricesQuery.sql,
-      pricesQuery.params,
+    query<RawMedianClosePriceRow>(
+      medianQuery.sql,
+      medianQuery.params,
     ),
   ]);
 
   const summary = summaryRows[0];
-
-  const closePrices = priceRows
-    .map((row) => Number(row.ClosePrice))
-    .filter((price) => Number.isFinite(price));
 
   return {
     city: normalizedCity,
@@ -237,7 +273,9 @@ export async function getCityMarketSummary(
     averageClosePrice: toNullableNumber(
       summary?.averageClosePrice,
     ),
-    medianClosePrice: calculateMedian(closePrices),
+    medianClosePrice: toNullableNumber(
+      medianRows[0]?.medianClosePrice,
+    ),
     averagePricePerSqft: toNullableNumber(
       summary?.averagePricePerSqft,
     ),
@@ -260,15 +298,15 @@ export async function getCityMonthlyTrend(
     throw new Error("City is required for market statistics.");
   }
 
-  const trendQuery = buildMonthlyTrendQuery(
-    normalizedCity,
-    months,
-  );
-
-  const rows = await query<RawMonthlyTrendRow>(
-    trendQuery.sql,
-    trendQuery.params,
-  );
+  const rows: RawMonthlyTrendRow[] = [];
+  // A 60-month window can touch 61 calendar months; retain recent rows while
+  // keeping every individual query bounded to 50 rows.
+  for (let offset = 0; offset <= normalizeMonths(months); offset += 50) {
+    const trendQuery = buildMonthlyTrendQuery(normalizedCity, months, offset);
+    const page = await query<RawMonthlyTrendRow>(trendQuery.sql, trendQuery.params);
+    rows.push(...page);
+    if (page.length < 50) break;
+  }
 
   return rows.map((row) => ({
     month: row.month,

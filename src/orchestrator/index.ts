@@ -2,10 +2,18 @@ import { marketStatsSkill } from "../skills/market-stats";
 import { handlePropertySearch } from "../skills/property-search/conversation";
 import { getFollowUpQuestion } from "../skills/property-search/followUp";
 import { getSession } from "../skills/property-search/session";
+import { parsePropertyQuery } from "../skills/property-search/parsePropertyQuery";
 import { recommendationSkill } from "../skills/recommendations";
 import { ragSkill } from "../skills/rag";
+import { semanticSearchSkill } from "../skills/semantic-search";
+import {
+  emailAgent,
+  isEmailDecisionMessage,
+} from "../email/emailAgent";
 
 export type OrchestratorIntent =
+  | "help"
+  | "semantic"
   | "search"
   | "market"
   | "recommend"
@@ -24,6 +32,7 @@ export interface OrchestratorAgents {
     userId: string,
   ) => Promise<AgentMessageResult>;
   marketStatsAgent: (query: string) => Promise<AgentMessageResult>;
+  semanticSearchAgent: (query: string) => Promise<AgentMessageResult>;
   recommendationAgent: (listingId: string) => Promise<AgentMessageResult>;
   ragAgent: (query: string) => Promise<AgentMessageResult>;
   emailDraftAgent: (
@@ -53,6 +62,19 @@ const FALLBACK_MESSAGE =
   "I'm not sure how to help with that. Try asking about properties, market trends, recommendations, or project knowledge.";
 const ORCHESTRATION_ERROR_MESSAGE =
   "I couldn't complete that request right now. Check that MySQL is running and try again.";
+
+export const HELP_MESSAGE = [
+  "Try one of these prompts:",
+  "• Find 3 bedroom houses in Irvine under $2m",
+  "• Market stats for Irvine over 6 months",
+  "• Semantic search: a quiet home with a pool and mountain views",
+  "• Similar to <listing ID from a search result>",
+  "• What does DOM mean?",
+  "• Find 3 bedroom houses in Irvine under $2m and show market trends",
+  "• Draft a weekly market report for Irvine to name@example.com",
+  "• CONFIRM EMAIL / CANCEL EMAIL (only your pending draft)",
+  "• Reset (clear property search filters)",
+].join("\n");
 
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -87,6 +109,9 @@ function isPropertySearchReset(text: string): boolean {
 export function classifyIntent(query: string): OrchestratorIntent {
   const text = normalize(query);
   if (!text) return "fallback";
+  if (/^(?:help|\/help|menu)$/i.test(text)) return "help";
+  if (isEmailDecisionMessage(text)) return "email-draft";
+  if (/^(?:semantic(?: search)?|find by description)\s*:/i.test(text)) return "semantic";
   if (isPropertySearchReset(text)) return "search";
 
   const wantsSearch = /\b(find|show|search|homes|houses|condos|townhomes|properties|listings|affordable)\b/i
@@ -112,19 +137,19 @@ export function hasPendingPropertySearchFollowUp(userId: string): boolean {
   return session.conversationStep > 0 && Boolean(getFollowUpQuestion(session.filters));
 }
 
-async function defaultEmailDraftAgent(): Promise<AgentMessageResult> {
-  return {
-    message:
-      "I can prepare an email draft once the email workflow is configured. No email was sent.",
-  };
+function isPropertyFollowUp(query: string, userId: string): boolean {
+  if (!hasPendingPropertySearchFollowUp(userId)) return false;
+  if (Object.values(parsePropertyQuery(query)).some((value) => value !== null)) return true;
+  return /^\$?\s*\d[\d,.]*\s*[km]?$/i.test(query);
 }
 
 export const defaultAgents: OrchestratorAgents = {
   propertySearchAgent: async (query, userId) => handlePropertySearch(userId, query),
   marketStatsAgent: marketStatsSkill,
+  semanticSearchAgent: semanticSearchSkill,
   recommendationAgent: recommendationSkill,
   ragAgent: ragSkill,
-  emailDraftAgent: defaultEmailDraftAgent,
+  emailDraftAgent: emailAgent,
 };
 
 function getAgents(overrides: Partial<OrchestratorAgents> = {}): OrchestratorAgents {
@@ -191,9 +216,9 @@ export async function orchestrate(
 ): Promise<OrchestratorResult> {
   const normalizedQuery = normalize(query);
   const classifiedIntent = classifyIntent(normalizedQuery);
-  const intent = classifiedIntent === "fallback" && hasPendingPropertySearchFollowUp(userId)
-    ? "search"
-    : classifiedIntent;
+  const intent = classifiedIntent === "fallback" && isPropertyFollowUp(normalizedQuery, userId)
+      ? "search"
+      : classifiedIntent;
   const agents = getAgents(options.agents);
 
   if (intent === "mixed") {
@@ -210,7 +235,13 @@ export async function orchestrate(
   }
 
   let result: AgentMessageResult;
-  if (intent === "search") {
+  if (intent === "help") {
+    result = { message: HELP_MESSAGE };
+  } else if (intent === "semantic") {
+    result = await runAgentSafely(() => agents.semanticSearchAgent(
+      normalizedQuery.replace(/^(?:semantic(?: search)?|find by description)\s*:\s*/i, ""),
+    ));
+  } else if (intent === "search") {
     result = await runAgentSafely(
       () => agents.propertySearchAgent(normalizedQuery, userId),
     );
@@ -252,6 +283,10 @@ function intentTitle(
   intent: Exclude<OrchestratorIntent, "mixed" | "fallback">,
 ): string {
   switch (intent) {
+    case "help":
+      return "Help";
+    case "semantic":
+      return "Semantic search";
     case "search":
       return "Property search";
     case "market":

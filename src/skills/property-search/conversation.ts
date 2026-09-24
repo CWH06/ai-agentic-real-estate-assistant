@@ -15,6 +15,7 @@ export interface PropertySearchResponse {
 export async function handlePropertySearch(
   sessionId: string,
   userInput: string,
+  searchListings: typeof searchActiveListings = searchActiveListings,
 ): Promise<PropertySearchResponse> {
   const normalized = userInput.trim();
 
@@ -47,7 +48,7 @@ export async function handlePropertySearch(
     return { message: followUpQuestion, done: false };
   }
 
-  const rows = await searchActiveListings(mergedFilters, 1, 5);
+  const rows = await searchListings(mergedFilters, 1, 5);
   const formattedListings = formatPropertyCards(rows);
 
   updateSession(sessionId, { lastResults: formattedListings });

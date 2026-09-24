@@ -18,7 +18,7 @@ describe("market statistics database result handling", () => {
     queryMock.mockReset();
   });
 
-  it("normalizes MySQL strings and calculates the median", async () => {
+  it("normalizes MySQL aggregate and median values", async () => {
     queryMock
       .mockResolvedValueOnce([
         {
@@ -30,10 +30,7 @@ describe("market statistics database result handling", () => {
         },
       ])
       .mockResolvedValueOnce([
-        { ClosePrice: "600000" },
-        { ClosePrice: "700000" },
-        { ClosePrice: "800000" },
-        { ClosePrice: "1000000" },
+        { medianClosePrice: "750000" },
       ]);
 
     await expect(
@@ -61,7 +58,9 @@ describe("market statistics database result handling", () => {
           listToClosePercent: null,
         },
       ])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([
+        { medianClosePrice: null },
+      ]);
 
     await expect(
       getCityMarketSummary("Unknown City", 12),
@@ -123,5 +122,17 @@ describe("market statistics database result handling", () => {
     ).rejects.toThrow("City is required");
 
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("retains the newest months when the window exceeds 50 grouped rows", async () => {
+    const rows = Array.from({ length: 61 }, (_, i) => ({
+      month: new Date(Date.UTC(2021, i, 1)).toISOString().slice(0, 7),
+      soldCount: 2, averageClosePrice: 900000, averagePricePerSqft: 600, averageDaysOnMarket: 20,
+    }));
+    queryMock.mockResolvedValueOnce(rows.slice(0, 50)).mockResolvedValueOnce(rows.slice(50));
+    const result = await getCityMonthlyTrend("Irvine", 60);
+    expect(result).toHaveLength(61);
+    expect(result.at(-1)?.month).toBe("2026-01");
+    expect(queryMock.mock.calls.map((call) => call[1])).toEqual([["Irvine", 60, 0], ["Irvine", 60, 50]]);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildClosePricesQuery,
+  buildMedianClosePriceQuery,
   buildMarketSummaryQuery,
   buildMonthlyTrendQuery,
   calculateMedian,
@@ -121,6 +122,22 @@ describe("market statistics SQL builders", () => {
     expect(result.sql).toContain(
       "ORDER BY ClosePrice ASC",
     );
+    expect(result.sql).toContain("LIMIT 50");
+  });
+
+  it("builds an aggregate median query that returns one row", () => {
+    const result = buildMedianClosePriceQuery(
+      "Pasadena",
+      6,
+    );
+
+    expect(result.params).toEqual([
+      "Pasadena",
+      6,
+    ]);
+    expect(result.sql).toContain("ROW_NUMBER() OVER");
+    expect(result.sql).toContain("COUNT(*) OVER");
+    expect(result.sql).toContain("AVG(ranked.ClosePrice)");
   });
 
   it("builds a monthly trend query", () => {
@@ -132,6 +149,7 @@ describe("market statistics SQL builders", () => {
     expect(result.params).toEqual([
       "San Diego",
       24,
+      0,
     ]);
 
     expect(result.sql).toContain(
@@ -145,6 +163,7 @@ describe("market statistics SQL builders", () => {
     expect(result.sql).toContain(
       "ORDER BY month ASC",
     );
+    expect(result.sql).toContain("LIMIT 50");
   });
 
   it("limits months before adding them to SQL parameters", () => {

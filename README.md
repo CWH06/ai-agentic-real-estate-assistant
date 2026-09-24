@@ -1,53 +1,125 @@
 # AI Agentic Real Estate Assistant
 
-AI Agentic Real Estate Assistant is an OpenClaw-based multi-agent assistant for
-real estate search, market analysis, recommendations, and knowledge retrieval.
-The project is built around real MLS-style datasets and is designed to show how
-an agentic system can combine structured database queries, conversational memory,
-vector search, recommendation logic, and retrieval-augmented generation in one
-assistant experience.
+A TypeScript assistant that connects conversational property search, market
+analytics, semantic discovery, comparable-listing recommendations, source-cited
+knowledge answers, and approval-gated email reports. Run it in a terminal or
+through the Meta WhatsApp Cloud API.
 
-The assistant can help users search active listings with natural language,
-answer follow-up questions across a multi-turn conversation, summarize local
-market trends from sold transaction data, find semantically similar properties,
-recommend comparable active listings, and answer project or real-estate glossary
-questions from an indexed knowledge base.
+The live database snapshot used in development contains **53K+ listing records
+and 87K+ sold transactions**. These are imported records, not a real-time MLS
+feed; active search additionally filters listing status. Private datasets and
+credentials are not distributed with this repository.
 
-## Core Capabilities
+## Try the demo — no credentials needed
 
-- Natural language property search over active listings.
-- Multi-turn conversation memory for missing search filters.
-- Market statistics and trend summaries from sold comps.
-- Semantic property search using listing description embeddings.
-- Similar-listing recommendations with comp-based price checks.
-- RAG knowledge assistant over MLS field definitions and real-estate notes.
-- Shared chat routing for local CLI demos and WhatsApp-style message handling.
+Requires **Node.js 24+** and npm. From a fresh clone:
 
-## Data Sources
+```bash
+npm ci
+npm run demo:script   # reproducible walkthrough, then exit
+npm run demo          # interactive sample conversation
+```
 
-The project uses two local MySQL tables:
+Sample mode uses fictional listings and market statistics, illustrative feature
+vectors, excerpts from `knowledge/`, and simulated email delivery. It exercises
+the shared router, search conversation, ranking/formatting and approval workflow;
+it does **not** demonstrate real embedding/LLM quality or external delivery.
+No MySQL, `.env`, API keys, WhatsApp account or email account is needed.
 
-- `rets_property` for active MLS listings, listing remarks, property facts,
-  agent information, prices, locations, and photos.
-- `california_sold` for sold transactions, comps, close prices, market timing,
-  and historical pricing analysis.
+Try these prompts:
 
-Large SQL dumps, local database files, API keys, and `.env` secrets are not
-committed to the repository.
+```text
+Find 3 bedroom houses in Irvine under $2m
+Market stats for Irvine over 6 months
+Semantic search: a home with a pool and mountain views
+Similar to 900001
+What does DOM mean?
+Find 3 bedroom houses in Pasadena under $2m and show market trends
+Draft a weekly market report for Irvine to demo@example.com
+CONFIRM EMAIL
+```
 
-## Tech Stack
+`900001` is a sample ID. In live mode, use an ID returned by your own search.
+Type `help`, `reset`, or `exit` in the CLI.
 
-- TypeScript and Node.js
-- OpenClaw runtime
-- MySQL with `mysql2`
-- Vitest for tests
-- Embeddings through Voyage or OpenAI
-- RAG answer generation through DeepSeek or OpenAI
+## Live mode
 
-## Project Status
+1. Create a private `.env` using [.env.example](.env.example) as a template.
+   Do not overwrite an existing configuration or commit credentials.
+2. Connect an authorized MySQL database with `rets_property` and
+   `california_sold`; the repository does not include the proprietary SQL dump.
+3. Configure Voyage or OpenAI embeddings and DeepSeek or OpenAI answer generation.
+   Index with the same embedding model you query. Indexing writes to MySQL and
+   calls the embedding provider, potentially incurring charges:
 
-The project currently includes property search, database integration,
-conversational follow-up handling, market statistics, semantic search,
-recommendations, and Week 8 RAG knowledge retrieval. The next major step is a
-single orchestrator that coordinates all specialized agents for mixed user
-requests.
+   ```bash
+   npm run embeddings:index
+   npm run rag:index
+   ```
+
+4. Check dependencies, then start the live conversation:
+
+   ```bash
+   npm run demo:check
+   npm run demo:live
+   ```
+
+Live mode uses real data and provider APIs; **email remains dry-run in this CLI**.
+For real, explicitly approved email delivery use `npm run demo:email` or WhatsApp
+after configuring SMTP. Neither creates a scheduled email job. Gmail requires an
+app password, not your normal account password.
+
+For HTTPS, Meta webhook verification/subscriptions, systemd and service checks,
+see [Deployment](docs/deployment.md). The direct Meta path does not need Twilio
+or the legacy OpenClaw bridge to be running.
+
+## How it fits together
+
+```text
+CLI / Meta WhatsApp HTTPS webhook
+                 │
+          shared orchestrator
+                 ├─ property search → filters + per-user follow-ups → MySQL
+                 ├─ market analytics → sold aggregates + monthly trends
+                 ├─ semantic search → embeddings + cosine ranking
+                 ├─ recommendations → structured + vector scores + sold comps
+                 ├─ knowledge → retrieval + context-grounded answer + sources
+                 └─ email → preview → same-user approval → SMTP
+```
+
+Routing is rule-based, with parallel property/market execution for mixed queries.
+LLMs generate knowledge answers; they do not autonomously issue SQL or approve
+emails. The sample and live CLI use the same orchestrator as WhatsApp.
+
+## Validation and demo guide
+
+```bash
+npm run check         # TypeScript + automated tests
+npm run demo:script   # safe sample smoke test
+```
+
+GitHub Actions runs these checks on `main`, `demo-ready` and pull requests.
+Default tests use mocks/local HTTP servers; database integration tests are
+opt-in (`RUN_DB_TESTS=1`) and require a separate test database. Some integration
+tests write isolated test index entries. Passing unit tests is not a claim of
+live delivery, retrieval accuracy or production uptime.
+
+- [Demo walkthrough and troubleshooting](docs/demo.md)
+- [Architecture and limitations](docs/architecture.md)
+- [Deployment runbook](docs/deployment.md)
+
+## Boundaries
+
+- English text queries are the supported demo path; audio is not transcribed.
+- Search sessions, email approvals and webhook deduplication are in memory;
+  restart clears them. The webhook acknowledges before processing, without a
+  durable queue or cross-restart retry guarantee.
+- Semantic retrieval ranks a bounded candidate pool in application memory;
+  it is not a dedicated approximate-nearest-neighbor vector database.
+- A source citation does not establish answer accuracy. Real estate material is
+  educational, not an appraisal or legal/financial advice.
+- Legacy OpenClaw/Twilio-style scripts remain for earlier integrations. The
+  unsigned legacy webhook is local-only and must not be exposed publicly.
+
+This consolidated version retains the earlier weekly branch history. New demo
+work belongs on `main`; older branches are historical checkpoints.

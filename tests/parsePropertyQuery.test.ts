@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parsePropertyQuery } from "../src/skills/property-search/parsePropertyQuery";
 
 describe("parsePropertyQuery", () => {
+  it("recognizes plural houses in complete demo queries", () => {
+    expect(parsePropertyQuery("Find 3 bedroom houses in Pasadena under $2m")).toMatchObject({
+      city: "Pasadena", beds: 3, maxPrice: 2000000, type: "SingleFamilyResidence",
+    });
+  });
   it("parses the handbook example", () => {
     expect(parsePropertyQuery("Show me 3-bedroom condos in Irvine under $1.5M with a pool.")).toMatchObject({
       city: "Irvine",

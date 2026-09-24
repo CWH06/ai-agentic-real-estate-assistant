@@ -2,6 +2,11 @@ node_modules/
 .venv/
 .env
 .env.local
+.env.*
+!.env.example
+coverage/
+*.log
+AI_Agentic_Engineer_Intern_Handbook_2026.pdf
 .DS_Store
 *.sql
 data/*.csv

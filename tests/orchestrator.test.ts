@@ -12,6 +12,7 @@ import { clearSession, updateSession } from "../src/skills/property-search/sessi
 
 function createAgents(): OrchestratorAgents {
   return {
+    semanticSearchAgent: vi.fn(async () => ({ message: "Semantic matches." })),
     propertySearchAgent: vi.fn(async () => ({
       message: "I found matching listings.",
     })),
@@ -88,6 +89,28 @@ describe("formatCombinedResponse", () => {
 });
 
 describe("orchestrate", () => {
+  it("routes descriptions to semantic search without a command prefix", async () => {
+    const agents = createAgents();
+    const result = await orchestrate("Semantic search: quiet home with a pool", "semantic-user", { agents });
+    expect(result.intent).toBe("semantic");
+    expect(agents.semanticSearchAgent).toHaveBeenCalledWith("quiet home with a pool");
+    expect(agents.propertySearchAgent).not.toHaveBeenCalled();
+  });
+
+  it("routes bare approval to the injected email workflow", async () => {
+    const agents = createAgents();
+    const result = await orchestrate("confirm", "approval-user", { agents });
+    expect(result.intent).toBe("email-draft");
+    expect(agents.emailDraftAgent).toHaveBeenCalledWith("confirm", "approval-user");
+  });
+
+  it("serves help without calling external agents", async () => {
+    const agents = createAgents();
+    const result = await orchestrate("help", "help-user", { agents });
+    expect(result.intent).toBe("help");
+    expect(result.message).toContain("CONFIRM EMAIL");
+    for (const agent of Object.values(agents)) expect(agent).not.toHaveBeenCalled();
+  });
   it("routes search intent to the property search agent", async () => {
     const agents = createAgents();
     const result = await orchestrate("Find homes in Irvine", "user-1", {
@@ -186,6 +209,19 @@ describe("orchestrate", () => {
     expect(result.intent).toBe("knowledge");
     expect(agents.ragAgent).toHaveBeenCalledWith("What does DOM mean?");
     expect(agents.marketStatsAgent).not.toHaveBeenCalled();
+  });
+
+  it("routes an explicit email decision to the email agent", async () => {
+    const agents = createAgents();
+    const result = await orchestrate("CONFIRM EMAIL", "user-1", {
+      agents,
+    });
+
+    expect(result.intent).toBe("email-draft");
+    expect(agents.emailDraftAgent).toHaveBeenCalledWith(
+      "CONFIRM EMAIL",
+      "user-1",
+    );
   });
 
   it("runs search and market agents for mixed intent", async () => {
